@@ -6,17 +6,17 @@ cd "$(dirname "$0")/.."
 
 fail() { echo "GATE FAILED: $1"; exit 1; }
 
-echo "== check 1/5: lint"
+echo "== check 1/6: lint"
 python3 -m ruff check . || fail "ruff"
 
-echo "== check 2/5: tests"
+echo "== check 2/6: tests"
 python3 -m pytest -q || fail "pytest"
 
-echo "== check 3/5: the core imports no web framework"
+echo "== check 3/6: the core imports no web framework"
 out=$(python3 -c "import sys, paystack_webhooks; print(','.join(m for m in ('fastapi','flask','django','starlette') if m in sys.modules))")
 [ -z "$out" ] || fail "core pulled in $out"
 
-echo "== check 4/5: version consistency (pyproject vs module)"
+echo "== check 4/6: version consistency (pyproject vs module)"
 python3 - <<'PY' || fail "version mismatch"
 import pathlib, sys
 try:
@@ -29,7 +29,13 @@ print("version", meta, "vs module", mod)
 sys.exit(0 if meta == mod else 1)
 PY
 
-echo "== check 5/5: the built wheel actually contains the package"
+echo "== check 5/6: README install name matches the distribution name"
+pyname=$(grep -m1 -E '^name[[:space:]]*=' pyproject.toml | sed -E 's/.*"(.*)".*/\1/')
+docname=$(grep -m1 -oE 'pipx install [A-Za-z0-9._-]+' README.md | awk '{print $3}')
+echo "   pyproject=$pyname README=$docname"
+[ "$pyname" = "$docname" ] || fail "README tells people to install '$docname' but the package is '$pyname'"
+
+echo "== check 6/6: the built wheel actually contains the package"
 python3 -c "import build" 2>/dev/null || fail "wheel check needs the 'build' package: pip install build"
 tmpd=$(mktemp -d)
 python3 -m build --wheel --outdir "$tmpd" >"$tmpd/build.log" 2>&1 || { cat "$tmpd/build.log"; fail "wheel build"; }

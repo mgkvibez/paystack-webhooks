@@ -42,12 +42,12 @@ single call that is safe to repeat.
 ## Install
 
 ```bash
-pip install git+https://github.com/mgkvibez/paystack-webhooks.git
+pipx install paystack-webhook
 ```
 
-The PyPI name is reserved for this project and the release workflow is in place; the
-published package follows once the trusted publisher is configured. Until then, the
-git install above is the honest one.
+The distribution is called `paystack-webhook`, singular, because PyPI refused
+`paystack-webhooks` as too similar to a project that already exists. Nothing a user
+types changes: the import is `paystack_webhooks` and the repo keeps its name.
 
 Python 3.9+, **zero runtime dependencies**. FastAPI and Flask are optional extras that
 only the adapters import.
