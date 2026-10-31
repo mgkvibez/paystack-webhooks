@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "paystack-webhook"
-version = "0.1.1"
+version = "0.2.0"
 description = "Verify Paystack and Flutterwave webhooks in Python: HMAC-SHA512, idempotency, replay-safe retries. Zero dependencies."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -25,6 +25,9 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "fastapi>=0.110", "httpx>=0.27", "flask>=3.0", "ruff>=0.4", "build>=1.0"]
+
+[project.scripts]
+paystack-webhook = "paystack_webhooks.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/mgkvibez/paystack-webhooks"

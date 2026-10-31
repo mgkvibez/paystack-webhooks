@@ -105,6 +105,54 @@ header, which proves the sender knows the hash and nothing else. A valid header 
 accompany a tampered payload if the hash leaks. This library says so instead of
 implying parity with Paystack.
 
+## When a delivery never arrives
+
+Verification only helps if the body shows up. The failure that costs money is the
+opposite one: the provider says paid, your handler never ran, and nothing is reconciling
+the two. This package now carries a store, a reconciliation job and a replay CLI for it.
+
+Pass the store when you construct the webhook, so deliveries are recorded with their raw
+bytes:
+
+```python
+from paystack_webhooks import PaystackWebhook, SQLiteStore
+
+store = SQLiteStore("deliveries.db")
+paystack = PaystackWebhook("sk_live_...", store=store)
+```
+
+Then compare the provider's ledger against what actually arrived:
+
+```bash
+paystack-webhook reconcile --store deliveries.db --ledger transactions.json
+```
+
+Each finding is a different bug with a different fix:
+
+| Finding | What it means |
+|---|---|
+| `paid_no_delivery` | the ledger says paid and no webhook ever reached you |
+| `delivery_no_ledger` | a delivery for a reference the provider does not know |
+| `amount_mismatch` / `currency_mismatch` | the delivery disagrees with the ledger, in minor units |
+| `duplicate_delivery` | more than one delivery for one reference |
+| `ledger_state_mismatch` | the delivery says success, the ledger says otherwise |
+| `unparseable_delivery` | the stored body is not a payload with a reference |
+
+Exit codes are the contract: `0` clean, `1` findings, `2` usage error. `--json` for a
+machine.
+
+To resend a loss:
+
+```bash
+paystack-webhook replay --store deliveries.db --url http://localhost:3000/webhook --reference T1234
+```
+
+The body is reused byte for byte and the signature is recomputed over those bytes. A
+re-serialised JSON body produces a signature that no longer matches, which is the bug
+replay exists to avoid. Without `--secret` (or `$PAYSTACK_WEBHOOK_SECRET`) the stored
+signature header is reused unchanged, which is only correct if your secret has not
+rotated. `--dry-run` prints the plan and touches no network.
+
 ## The security model, stated plainly
 
 | | Paystack | Flutterwave |
