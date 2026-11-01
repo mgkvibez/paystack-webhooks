@@ -153,6 +153,27 @@ replay exists to avoid. Without `--secret` (or `$PAYSTACK_WEBHOOK_SECRET`) the s
 signature header is reused unchanged, which is only correct if your secret has not
 rotated. `--dry-run` prints the plan and touches no network.
 
+## Stripe, and the replay protection the others cannot offer
+
+```python
+from paystack_webhooks import StripeWebhook
+
+stripe = StripeWebhook(secret_key=os.environ["STRIPE_WEBHOOK_SECRET"])  # whsec_...
+event = stripe.parse(request.body(), request.headers)   # raw bytes, as always
+```
+
+Stripe signs `{timestamp}.{raw body}` with HMAC-SHA256 and sends `Stripe-Signature:
+t=...,v1=...`. Because the timestamp is inside the signed string, this adapter can do
+something the other two cannot: refuse a delivery whose timestamp is outside a tolerance
+window (300 seconds by default), even when the digest is valid. A captured Stripe webhook
+stops being usable; a captured Paystack one stays valid forever.
+
+During a secret rotation Stripe sends more than one `v1` digest. Any match is accepted, and
+unknown scheme pairs are ignored rather than failing the request.
+
+The tolerance is `StripeWebhook(secret_key=..., tolerance=300)`. Raise it only if your
+clock is genuinely skewed; a generous window gives a replay somewhere to land.
+
 ## The security model, stated plainly
 
 | | Paystack | Flutterwave |

@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3.0 - 2026-11-01
+
+- Stripe adapter (`StripeWebhook`). Verifies `Stripe-Signature: t=...,v1=...` as
+  HMAC-SHA256 over `{timestamp}.{raw body}`, the scheme Stripe actually uses.
+- Stripe is the one provider of the three that makes replay detectable: the timestamp is
+  inside the signed string, so a delivery older than `tolerance` (default 300s) is refused
+  even with a valid digest. Paystack and Flutterwave sign no timestamp, so their only
+  replay defence remains deduplicating on `event_id`.
+- Rotation handled: several `v1` digests are accepted if any one matches, and unknown
+  scheme pairs are ignored rather than treated as a failure.
+- `reconcile` reads Stripe payloads: the record is nested under `data.object`, so it now
+  unwraps that level and accepts `client_reference_id`, `metadata.reference`,
+  `amount_total`/`amount_received` and the succeeded-style event names.
+- 19 tests, including a stale-timestamp replay, a tampered body, and rotation.
+
+
 ## v0.2.0 - 2026-10-31
 
 Reconciliation and replay: the half of the webhook problem verification cannot cover,

@@ -34,6 +34,10 @@ KINDS = (
     UNPARSEABLE_DELIVERY,
 )
 
+_SUCCESS_EVENTS = {
+    "payment_intent.succeeded", "checkout.session.completed",
+    "charge.succeeded", "invoice.paid",
+}
 _SUCCESS_STATUSES = {"success", "successful", "completed"}
 
 
@@ -118,14 +122,21 @@ def _facts(body: bytes) -> tuple:
     data = payload.get("data") or {}
     if not isinstance(data, Mapping):
         data = {}
-    event = str(payload.get("event") or "")
-    reference = data.get("reference") or data.get("tx_ref") or payload.get("reference")
+    if isinstance(data, Mapping) and isinstance(data.get("object"), Mapping):
+        data = data["object"]           # Stripe nests the record one level deeper
+    event = str(payload.get("event") or payload.get("type") or "")
+    metadata = data.get("metadata")
+    metadata = metadata if isinstance(metadata, Mapping) else {}
+    reference = (data.get("reference") or data.get("tx_ref")
+                 or data.get("client_reference_id") or metadata.get("reference")
+                 or data.get("id") or payload.get("reference"))
     status = str(data.get("status") or "").lower()
-    successful = status in _SUCCESS_STATUSES or event.lower().endswith(".success")
+    successful = (status in _SUCCESS_STATUSES or event.lower().endswith(".success")
+                  or event in _SUCCESS_EVENTS)
     return (
         event,
         str(reference) if reference else None,
-        _as_amount(data.get("amount")),
+        _as_amount(data.get("amount") or data.get("amount_total") or data.get("amount_received")),
         (str(data.get("currency")).upper() if data.get("currency") else None),
         successful,
     )

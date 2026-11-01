@@ -16,8 +16,9 @@ from .paystack import PaystackWebhook
 from .reconcile import Finding, LedgerEntry, load_ledger, reconcile
 from .replay import ReplayResult, replay_deliveries, sign
 from .storage import Delivery, SQLiteStore
+from .stripe import StripeWebhook
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "Delivery",
@@ -28,6 +29,7 @@ __all__ = [
     "MalformedPayload",
     "MemoryStore",
     "PaystackWebhook",
+    "StripeWebhook",
     "RawBodyRequired",
     "ReplayResult",
     "SQLiteStore",
